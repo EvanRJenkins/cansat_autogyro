@@ -1,9 +1,8 @@
 CC = gcc
 LDLIBS = -lm
 CFLAGS = -g -Iinclude -Wall -Wextra
-PARAM ?= main.c # Default to running main program
-SRCS = $(PARAM)
-TARGET = test_autogyro
+SRCS = src/test.c
+TARGET = my_test
 
 all: $(TARGET)
 
