@@ -1,10 +1,9 @@
-#ifndef PIDLITE_H
-#define PIDLITE_H
+#ifndef CPID_H
+#define CPID_H
 /*
 Configuration header
 */
-#include "config.h"
-#include <float.h>
+#include "cpid_config.h"
 /*
 If USE_FLOAT defined in config.h,
 use float instead of double
