@@ -1,0 +1,8 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+/*
+USE THIS FILE TO SPECIFY DOUBLE OR FLOAT, etc.
+*/
+#define USE_FLOAT
+#define ENABLE_DERIVATIVE
+#endif  // CONFIG_H
