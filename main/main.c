@@ -41,6 +41,7 @@ static const char *TAG_SCD41 = "SCD41";
 static const char *TAG_LORA  = "LORA";
 static const char *TAG_IMU   = "IMU";
 static const char *TAG_TMP   = "TMP";
+static const char *TAG_PID   = "PID";
 
 // I2C Pins (DPS310, SCD41, LSM9DS1)
 #define I2C_PORT       I2C_NUM_0
@@ -115,6 +116,30 @@ static void lsm9ds1_task(void *arg) {
     }
 }
 
+// ===================== PID TASK =====================
+
+static void pid_task(void *arg) {
+    ESP_LOGI(TAG_PID, "Starting PID task...");
+    /*
+    if (lsm9ds1_init(I2C_PORT) != ESP_OK) 
+    {
+        ESP_LOGE(TAG_IMU, "Failed to initialize LSM9DS1");
+        vTaskDelete(NULL);
+    }
+    */
+    // Init PID
+    PID_Handle_t MyPID = {0.0f}; // Init PID handle
+    MyPID.SP = 20.0f; // Set SP
+    MyPID.PGain = 20.0f; // Set P Gain
+    MyPID.IGain = 2.0f; // Set I Gain
+    MyPID.DGain = 4.0f; // Set D Gain
+
+    while (1) {
+        PID_
+        
+        vTaskDelay(pdMS_TO_TICKS(1000)); 
+    }
+}
 void app_main(void) {
     // ---------------------------------------------------------
     // STEP 1: CRITICAL - Create the Mutex BEFORE anything else
@@ -136,23 +161,10 @@ void app_main(void) {
     // // IMU Task
     xTaskCreatePinnedToCore(lsm9ds1_task, "lsm9ds1_task", 4096, NULL, 8, NULL, 1);
     
-    /*
-    PID_Handle_t MyPID = {0.0f}; // Init PID handle
-    MyPID.SP = 20.0f; // Set SP
-    MyPID.PGain = 20.0f; // Set P Gain
-    MyPID.IGain = 2.0f; // Set I Gain
-    MyPID.DGain = 4.0f; // Set D Gain
-    
+       
     while (1) {
         
-        PID_Update(&MyPID); // Calculate weights
-        printf("PV: %f  SP: %f  PGain: %f  IGain: %f  DGain: %f \n", 
-                MyPID.PV, MyPID.SP, MyPID.PGain, MyPID.IGain, MyPID.DGain);
-        PID_Process(&MyPID, 100.0f); // Feedback to PV
-        
-        // Every 1000 ticks, toggle
-        vTaskDelay(pdMS_TO_TICKS(1000));
-        
+                
     }
     */
 }
