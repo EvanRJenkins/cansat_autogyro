@@ -135,8 +135,11 @@ static void pid_task(void *arg) {
     MyPID.DGain = 4.0f; // Set D Gain
 
     while (1) {
-        PID_
-        
+        PID_Update(&MyPID); // Calculate weights
+        printf("PV: %f  SP: %f  PGain: %f  IGain: %f  DGain: %f \n", 
+                MyPID.PV, MyPID.SP, MyPID.PGain, MyPID.IGain, MyPID.DGain);
+        PID_Process(&MyPID, 100.0f); // Feedback to PV
+        // Every 1000 ticks, toggle
         vTaskDelay(pdMS_TO_TICKS(1000)); 
     }
 }
@@ -160,12 +163,6 @@ void app_main(void) {
     ESP_LOGI(TAG_MAIN, "Creating tasks...");
     // // IMU Task
     xTaskCreatePinnedToCore(lsm9ds1_task, "lsm9ds1_task", 4096, NULL, 8, NULL, 1);
-    
-       
-    while (1) {
-        
-                
-    }
-    */
+    xTaskCreatePinnedToCore(pid_task, "pid_task", 4096, NULL, 9, NULL, 1);
 }
 
