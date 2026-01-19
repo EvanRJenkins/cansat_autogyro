@@ -116,7 +116,7 @@ static void lsm9ds1_task(void *arg) {
                 xSemaphoreGive(dataMutex);
             }
         }
-        vTaskDelay(pdMS_TO_TICKS(100)); 
+        vTaskDelay(pdMS_TO_TICKS(20)); 
     }
 }
 
@@ -145,7 +145,7 @@ static void pid_task(void *arg) {
         //        MyPID.PV, MyPID.SP, MyPID.CV);
         //PID_Process(&MyPID, 100.0f); // Feedback to PV
         // Every X ticks, toggle
-        vTaskDelay(pdMS_TO_TICKS(100)); 
+        vTaskDelay(pdMS_TO_TICKS(20)); 
     }
 }
 
@@ -160,7 +160,7 @@ static void serial_plot_task(void *arg) {
     while (1) {
         // Send new x acceleration sample
         serial_plotter_send(transmittedData.accelX, transmittedData.accelY, transmittedData.accelZ);
-        vTaskDelay(pdMS_TO_TICKS(100)); 
+        vTaskDelay(pdMS_TO_TICKS(20)); 
     }
 }
 void app_main(void) {

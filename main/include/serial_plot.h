@@ -13,7 +13,7 @@
 // UART_NUM_0 is usually the default USB-UART bridge on dev boards.
 // If using the native USB port (USB Serial/JTAG), this setup might differ.
 #define PLOTTER_UART_PORT      UART_NUM_0
-#define PLOTTER_BAUD_RATE      115200
+#define PLOTTER_BAUD_RATE      230400
 #define PLOTTER_TX_PIN         UART_PIN_NO_CHANGE // Uses default pins for the board
 #define PLOTTER_RX_PIN         UART_PIN_NO_CHANGE
 #define PLOTTER_BUF_SIZE       1024

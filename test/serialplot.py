@@ -7,7 +7,7 @@ from collections import deque
 
 # --- CONFIGURATION ---
 PORT = '/dev/ttyACM0'
-BAUD_RATE = 115200
+BAUD_RATE = 230400
 MAX_POINTS = 500
 NUM_TRACES = 3        # Set this to match the number of values you send (e.g., 3 for X,Y,Z)
 Y_AXIS_MIN = -1100    # Initial min (will auto-scale if auto_scale is True)
