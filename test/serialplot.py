@@ -11,7 +11,6 @@ import math
 PORT = '/dev/ttyACM0'
 BAUD_RATE = 115200       # Match this to your Arduino code
 MAX_POINTS = 200       # How many points to show on the graph at once
-USE_MOCK_DATA = False  # Set to True to test without hardware
 
 # --- DATA STORAGE ---
 data_buffer = deque([0.0] * MAX_POINTS, maxlen=MAX_POINTS)
@@ -26,33 +25,21 @@ def get_serial_data():
     print(f"Connecting to {PORT} at {BAUD_RATE} baud...")
     
     try:
-        if not USE_MOCK_DATA:
-            ser = serial.Serial(PORT, BAUD_RATE, timeout=1)
-            time.sleep(2) # Allow connection to settle (crucial for Arduino)
-            print("Connected!")
+        ser = serial.Serial(PORT, BAUD_RATE, timeout=1)
+        time.sleep(2) # Allow connection to settle (crucial for Arduino)
+        print("Connected!")
         
         while is_running:
             try:
-                if USE_MOCK_DATA:
-                    # SIMULATION: Generate a sine wave with noise
-                    t = time.time()
-                    value = math.sin(t * 3) + random.uniform(-0.1, 0.1)
-                    time.sleep(0.05) # Simulate data rate
+                if ser.in_waiting > 0:
+                    line = ser.readline().decode('utf-8').strip()
+                   
+                    # Ignore empty lines
+                    if not line:
+                        continue
+                    value = float(line)
                 else:
-                    # REAL HARDWARE
-                    if ser.in_waiting > 0:
-                        line = ser.readline().decode('utf-8').strip()
-                        
-                        # --- ADD THIS PRINT STATEMENT ---
-                        print(f"Raw data received: '{line}'") 
-                        # --------------------------------
-                        
-                        # Ignore empty lines
-                        if not line:
-                            continue
-                        value = float(line)
-                    else:
-                        continue # No data waiting
+                    continue # No data waiting
                 
                 # specific safe update of the data buffer
                 with data_lock:
@@ -64,9 +51,9 @@ def get_serial_data():
                 print(f"Error reading data: {e}")
                 
     except serial.SerialException:
-        print(f"Could not open port {PORT}. Enable 'USE_MOCK_DATA' to test without hardware.")
+        print(f"Could not open port {PORT}.")
     finally:
-        if not USE_MOCK_DATA and 'ser' in locals() and ser.is_open:
+        if 'ser' in locals() and ser.is_open:
             ser.close()
             print("Serial connection closed.")
 
@@ -76,16 +63,11 @@ def update_plot(frame, line, ax):
     """
     with data_lock:
         # Copy data to ensure thread safety during plotting
-        y_data = list(data_buffer)
+        accel_data_x = list(data_buffer)
         
-    line.set_ydata(y_data)
-    
-    # Auto-scale the Y-axis to fit new data with a little padding
-    current_min = min(y_data)
-    current_max = max(y_data)
-    margin = (current_max - current_min) * 0.1 if current_max != current_min else 1.0
-    
-    ax.set_ylim(current_min - margin, current_max + margin)
+    line.set_ydata(accel_data_x)
+    # Y axis limits
+    ax.set_ylim(-1000, 1000)
     
     return line,
 
