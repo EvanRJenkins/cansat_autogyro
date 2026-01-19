@@ -22,7 +22,7 @@
 #include "serial_plot.h"
 typedef struct 
 {
-  float accelX, accelY, accelZ;
+  float ax_mps2, ay_mps2, az_mps2;
   float gyroX, gyroY, gyroZ;
   float pressure;
   float temp;
@@ -34,6 +34,10 @@ typedef struct
 // Mutex handle to protect the data
 SemaphoreHandle_t dataMutex = NULL;
 Data transmittedData; 
+// Create variables to hold roll (phi) and pitch (theta) angles
+float g_phiHat_deg = 0.0f;
+float g_thetaHat_deg = 0.0f;
+// Create variable for PID SP
 float g_currentSP = 0.0f;
 // ===================== LOGGING TAGS =====================
 
@@ -46,6 +50,7 @@ static const char *TAG_IMU   = "IMU";
 static const char *TAG_TMP   = "TMP";
 static const char *TAG_PID   = "PID";
 static const char *TAG_SERIAL_PLOT   = "SERIAL_PLOT";
+static const char *TAG_PR_ESTIMATES   = "PR_ESTIMATES";
 
 // I2C Pins (DPS310, SCD41, LSM9DS1)
 #define I2C_PORT       I2C_NUM_0
@@ -61,6 +66,9 @@ static const char *TAG_SERIAL_PLOT   = "SERIAL_PLOT";
 #define LORA_DIO0      26  // G0
 #define LORA_DIO1      33  // G1
 
+// Factors for math in pitch and roll estimate task
+#define RAD_TO_DEG 57.3f
+#define G_MPS2 981.0f
 
 // ===================== I2C INIT =====================
 
@@ -87,19 +95,17 @@ static void lsm9ds1_task(void *arg) {
         ESP_LOGE(TAG_IMU, "Failed to initialize LSM9DS1");
         vTaskDelete(NULL);
     }
-
+    float ax, ay, az;
+    float gx, gy, gz;
     while (1) {
-        float ax, ay, az;
-        float gx, gy, gz;
-
         if (lsm9ds1_read_accel(&ax, &ay, &az) == ESP_OK) {
             ESP_LOGI(TAG_IMU, "Accel (mg): X=%.2f Y=%.2f Z=%.2f", ax, ay, az);
 
             if (xSemaphoreTake(dataMutex, portMAX_DELAY) == pdTRUE)
             {
-                transmittedData.accelX = ax;
-                transmittedData.accelY = ay;
-                transmittedData.accelZ = az;
+                transmittedData.ax_mps2 = ax;
+                transmittedData.ay_mps2 = ay;
+                transmittedData.az_mps2 = az;
                 //UNLOCK
                 xSemaphoreGive(dataMutex);
             }
@@ -132,19 +138,32 @@ static void pid_task(void *arg) {
     }
     */
     // Init PID
-    PID_Handle_t MyPID = {transmittedData.accelX}; // Init PID handle
+    PID_Handle_t MyPID = {transmittedData.ax_mps2}; // Init PID handle
     MyPID.PGain = 20.0f; // Set P Gain
     MyPID.IGain = 2.0f; // Set I Gain
     MyPID.DGain = 4.0f; // Set D Gain
 
     while (1) {
-        MyPID.PV = transmittedData.accelX;
+        MyPID.PV = transmittedData.ax_mps2;
         MyPID.SP = g_currentSP;
         PID_Update(&MyPID); // Calculate weights
         //printf("PV: %f  SP: %f  CV: %f\n", 
         //        MyPID.PV, MyPID.SP, MyPID.CV);
         //PID_Process(&MyPID, 100.0f); // Feedback to PV
         // Every X ticks, toggle
+        vTaskDelay(pdMS_TO_TICKS(20)); 
+    }
+}
+
+// ===================== PITCH & ROLL ESTIMATES TASK =====================
+
+static void pr_estimates_task(void *arg) {
+    ESP_LOGI(TAG_PR_ESTIMATES, "Starting Pitch & Roll Estimates task...");
+    while (1) {
+        // Calculate roll and pitch angle estimates
+        g_phiHat_deg = atanf(transmittedData.ay_mps2 / transmittedData.az_mps2) * RAD_TO_DEG;
+        g_thetaHat_deg = asinf(transmittedData.ax_mps2 / G_MPS2) * RAD_TO_DEG;
+        // Delay
         vTaskDelay(pdMS_TO_TICKS(20)); 
     }
 }
@@ -159,7 +178,7 @@ static void serial_plot_task(void *arg) {
 
     while (1) {
         // Send new x acceleration sample
-        serial_plotter_send(transmittedData.accelX, transmittedData.accelY, transmittedData.accelZ);
+        serial_plotter_send(g_phiHat_deg, g_thetaHat_deg);
         vTaskDelay(pdMS_TO_TICKS(20)); 
     }
 }
@@ -182,8 +201,9 @@ void app_main(void) {
 
     ESP_LOGI(TAG_MAIN, "Creating tasks...");
     // // IMU Task
-    xTaskCreatePinnedToCore(lsm9ds1_task, "lsm9ds1_task", 4096, NULL, 8, NULL, 1);
-    xTaskCreatePinnedToCore(pid_task, "pid_task", 4096, NULL, 9, NULL, 1);
-    xTaskCreatePinnedToCore(serial_plot_task, "serial_plot_task", 4096, NULL, 10, NULL, 1);
+    xTaskCreatePinnedToCore(lsm9ds1_task, "lsm9ds1_task", 4096, NULL, 1, NULL, 1);
+    xTaskCreatePinnedToCore(pr_estimates_task, "pr_estimates_task", 4096, NULL, 2, NULL, 1);
+    xTaskCreatePinnedToCore(pid_task, "pid_task", 4096, NULL, 3, NULL, 1);
+    xTaskCreatePinnedToCore(serial_plot_task, "serial_plot_task", 4096, NULL, 4, NULL, 1);
 }
 

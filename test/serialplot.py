@@ -9,9 +9,9 @@ from collections import deque
 PORT = '/dev/ttyACM0'
 BAUD_RATE = 230400
 MAX_POINTS = 500
-NUM_TRACES = 3        # Set this to match the number of values you send (e.g., 3 for X,Y,Z)
-Y_AXIS_MIN = -1100    # Initial min (will auto-scale if auto_scale is True)
-Y_AXIS_MAX = 1100     # Initial max
+NUM_TRACES = 2        # Set this to match the number of values you send (e.g., 3 for X,Y,Z)
+Y_AXIS_MIN = -200    # Initial min (will auto-scale if auto_scale is True)
+Y_AXIS_MAX = 200     # Initial max
 
 # --- DATA STORAGE ---
 # Create a list of deques, one for each trace
@@ -66,7 +66,7 @@ def update_plot(frame, lines, ax):
     # Update each line on the graph
     for i, line in enumerate(lines):
         line.set_ydata(current_data[i])
-
+        print(current_data[i])
     return lines
 
 def main():
@@ -115,7 +115,7 @@ def main():
 
     # Create Lines with Neon Colors
     lines = []
-    labels = ["ACCEL_X", "ACCEL_Y", "ACCEL_Z"]
+    labels = ["g_phiHat_deg", "g_thetaHat_deg"]
     
     for i in range(NUM_TRACES):
         label_text = labels[i] if i < len(labels) else f"TRACE_{i}"

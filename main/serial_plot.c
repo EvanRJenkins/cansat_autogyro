@@ -38,12 +38,12 @@ void serial_plotter_init(void) {
  * which allows the Python script to use readline().
  * * @param value The sensor reading to plot.
  */
-void serial_plotter_send(float val1, float val2, float val3) {
+void serial_plotter_send(float val1, float val2) {
     char data_str[32];
     
     // Format: "123.45\n"
     // %.2f limits it to 2 decimal places to save bandwidth, increase if needed.
-    int len = snprintf(data_str, sizeof(data_str), "%.2f, %.2f, %.2f\n", val1, val2, val3);
+    int len = snprintf(data_str, sizeof(data_str), "%.2f, %.2f\n", val1, val2);
     
     if (len > 0) {
         uart_write_bytes(PLOTTER_UART_PORT, (const char *)data_str, len);
