@@ -18,6 +18,8 @@
 // // --- Sensor Includes ---
 #include "lsm9ds1_hal.h"
 
+// Include Evan's serial plot code
+#include "serial_plot.h"
 typedef struct 
 {
   float accelX, accelY, accelZ;
@@ -43,6 +45,7 @@ static const char *TAG_LORA  = "LORA";
 static const char *TAG_IMU   = "IMU";
 static const char *TAG_TMP   = "TMP";
 static const char *TAG_PID   = "PID";
+static const char *TAG_SERIAL_PLOT   = "SERIAL_PLOT";
 
 // I2C Pins (DPS310, SCD41, LSM9DS1)
 #define I2C_PORT       I2C_NUM_0
@@ -113,7 +116,7 @@ static void lsm9ds1_task(void *arg) {
                 xSemaphoreGive(dataMutex);
             }
         }
-        vTaskDelay(pdMS_TO_TICKS(1000)); 
+        vTaskDelay(pdMS_TO_TICKS(100)); 
     }
 }
 
@@ -138,11 +141,26 @@ static void pid_task(void *arg) {
         MyPID.PV = transmittedData.accelX;
         MyPID.SP = g_currentSP;
         PID_Update(&MyPID); // Calculate weights
-        printf("PV: %f  SP: %f  CV: %f\n", 
-                MyPID.PV, MyPID.SP, MyPID.CV);
+        //printf("PV: %f  SP: %f  CV: %f\n", 
+        //        MyPID.PV, MyPID.SP, MyPID.CV);
         //PID_Process(&MyPID, 100.0f); // Feedback to PV
-        // Every 1000 ticks, toggle
-        vTaskDelay(pdMS_TO_TICKS(1000)); 
+        // Every X ticks, toggle
+        vTaskDelay(pdMS_TO_TICKS(100)); 
+    }
+}
+
+// ===================== SERIAL PLOT TASK =====================
+
+static void serial_plot_task(void *arg) {
+    ESP_LOGI(TAG_SERIAL_PLOT, "Starting serial plot task...");
+
+    // Init serial plotter
+    serial_plotter_init();
+
+    while (1) {
+        // Send new x acceleration sample
+        serial_plotter_send(transmittedData.accelX);
+        vTaskDelay(pdMS_TO_TICKS(100)); 
     }
 }
 void app_main(void) {
@@ -166,5 +184,6 @@ void app_main(void) {
     // // IMU Task
     xTaskCreatePinnedToCore(lsm9ds1_task, "lsm9ds1_task", 4096, NULL, 8, NULL, 1);
     xTaskCreatePinnedToCore(pid_task, "pid_task", 4096, NULL, 9, NULL, 1);
+    xTaskCreatePinnedToCore(serial_plot_task, "serial_plot_task", 4096, NULL, 10, NULL, 1);
 }
 
