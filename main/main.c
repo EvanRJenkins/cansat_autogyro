@@ -159,7 +159,7 @@ static void serial_plot_task(void *arg) {
 
     while (1) {
         // Send new x acceleration sample
-        serial_plotter_send(transmittedData.accelX);
+        serial_plotter_send(transmittedData.accelX, transmittedData.accelY, transmittedData.accelZ);
         vTaskDelay(pdMS_TO_TICKS(100)); 
     }
 }

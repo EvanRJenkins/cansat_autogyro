@@ -31,5 +31,5 @@ void serial_plotter_init(void);
  * which allows the Python script to use readline().
  * * @param value The sensor reading to plot.
  */
-void serial_plotter_send(float value);
+void serial_plotter_send(float val1, float val2, float val3);
 #endif // Define header
